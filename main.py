@@ -1,5 +1,5 @@
 from constants import data_dir
-from functions import find_files
+from functions import find_files, do_fft
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,6 +15,7 @@ class DataPoint:
 
         self.t, self.y = None, None
         self.val = None
+        self.val_fd = None
 
         self.set_metadata()
         self.format_data()
@@ -32,6 +33,10 @@ class DataPoint:
         self.t, self.y = t, y - np.mean(y)
         self.val = np.max(np.abs(y))
 
+        f, Y = do_fft(self.t, self.y)
+        f_min, f_max = np.argmin(np.abs(f - 0.9)), np.argmin(np.abs(f - 1.2))
+        self.val_fd = np.sum(Y[f_min:f_max])
+
     def plot_td(self):
         plt.plot(self.t, self.y)
         plt.show()
@@ -44,9 +49,9 @@ if __name__ == '__main__':
     sam_points = [DataPoint(file) for file in find_files(data_dir, "Sam", ".txt")]
 
     for sam_point in sam_points:
-        if (abs(sam_point.x_pos - 12.75) < 0.25) and (abs(sam_point.y_pos - 13.00) < 0.25):
+        if (abs(sam_point.x_pos - 12) < 0.25) and (abs(sam_point.y_pos - 10) < 0.25):
             print(sam_point.file_path)
-            sam_point.plot_td()
+            #sam_point.plot_td()
 
     x_coords, y_coords = set([point.x_pos for point in sam_points]), set([point.y_pos for point in sam_points])
     x_min, x_max, y_min, y_max = min(x_coords), max(x_coords), min(y_coords), max(y_coords)
@@ -57,9 +62,9 @@ if __name__ == '__main__':
         x_ind = int((sam_point.x_pos - x_min) / 0.25)
         y_ind = int((sam_point.y_pos - y_min) / 0.25)
 
-        img[x_ind, y_ind] = sam_point.val
+        img[x_ind, y_ind] = sam_point.val_fd
 
-    plt.imshow(np.log(img), extent=[x_min, x_max, y_min, y_max], aspect=0.5)
+    plt.imshow(np.log(img), extent=[x_min, x_max, y_min, y_max], aspect=0.25)
     plt.xlabel("x (Owis) (mm)")
     plt.ylabel("y (TMCL) (mm)")
     plt.show()
