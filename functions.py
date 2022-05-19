@@ -20,6 +20,14 @@ def do_fft(t, y):
     return f[idx_range], Y[idx_range]
 
 
+def find_dp(datapoint_lst, x_pos, y_pos):
+    for sam_point in datapoint_lst:
+        if (abs(sam_point.x_pos - x_pos) < 0.25) and (abs(sam_point.y_pos - y_pos) < 0.25):
+            print(sam_point.file_path)
+
+            return sam_point
+
+
 if __name__ == '__main__':
     file = str(find_files(data_dir, "2022-05-17T17-32-27.543616", ".txt")[0])
     data = np.loadtxt(file)

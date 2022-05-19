@@ -41,9 +41,13 @@ class DataPoint:
         plt.plot(self.t, self.y)
         plt.show()
 
+    def plot_fft(self):
+        f, fft = do_fft(self.t, self.y)
+        idx = (f > 0.3) & (f < 1.0)
 
-def calculate_ri():
-    pass
+        plt.plot(f[idx], np.log10(np.abs(fft))[idx])
+        plt.title(self.file_path.stem)
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -52,9 +56,10 @@ if __name__ == '__main__':
     sub_points = [DataPoint(file) for file in find_files(data_dir, "Sub", ".txt")]
     sam_points = [DataPoint(file) for file in find_files(data_dir, "Sam", ".txt")]
 
-    for sam_point in sam_points:
-        if (abs(sam_point.x_pos - 12) < 0.25) and (abs(sam_point.y_pos - 10) < 0.25):
+    for i, sam_point in enumerate(sam_points):
+        if (abs(sam_point.x_pos - 12.50) < 0.25) and (abs(sam_point.y_pos - 13.50) < 0.25):
             print(sam_point.file_path)
+            print(i)
             #sam_point.plot_td()
 
     x_coords, y_coords = set([point.x_pos for point in sam_points]), set([point.y_pos for point in sam_points])
