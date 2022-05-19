@@ -35,11 +35,15 @@ class DataPoint:
 
         f, Y = do_fft(self.t, self.y)
         f_min, f_max = np.argmin(np.abs(f - 0.9)), np.argmin(np.abs(f - 1.2))
-        self.val_fd = np.sum(Y[f_min:f_max])
+        self.val_fd = np.sum(np.abs(Y[f_min:f_max]))
 
     def plot_td(self):
         plt.plot(self.t, self.y)
         plt.show()
+
+
+def calculate_ri():
+    pass
 
 
 if __name__ == '__main__':

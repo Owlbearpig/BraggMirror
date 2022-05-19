@@ -9,13 +9,15 @@ def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
                for name in files if name.endswith(file_extension) and search_str in str(name)]
     return results
 
+
 def do_fft(t, y):
     n = len(y)
-    dt = np.mean(np.diff(t))
+    dt = np.float(np.mean(np.diff(t)))
     Y = np.fft.fft(y, n)
-    f = np.fft.fftfreq(n) / dt
+    f = np.fft.fftfreq(len(t), dt)
+    idx_range = f > 0
 
-    return f[1:n//2], np.abs(Y[1:n//2])
+    return f[idx_range], Y[idx_range]
 
 
 if __name__ == '__main__':
