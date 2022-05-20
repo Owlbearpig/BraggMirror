@@ -59,7 +59,8 @@ if __name__ == '__main__':
 
         img[x_ind, y_ind] = sam_point.val
 
-    plt.imshow(np.log(img), extent=[x_min, x_max, y_min, y_max], aspect=0.5)
+    plt.imshow(img, extent=[x_min, x_max, y_min, y_max], aspect=0.5)
+    plt.colorbar()
     plt.xlabel("x (Owis) (mm)")
     plt.ylabel("y (TMCL) (mm)")
     plt.show()
