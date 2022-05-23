@@ -39,11 +39,12 @@ def extract_phase(f, T, plot=False):
         plt.plot(f, phase, label='phase')
         plt.plot(f, p[0] * f, label='lin. interpol')
         plt.xlim((0, 1.1))
-        #plt.ylim((0, 18))
+        # plt.ylim((0, 18))
         plt.legend()
-        #plt.show()
+        # plt.show()
 
     return phase
+
 
 if __name__ == '__main__':
     file = str(find_files(data_dir, "2022-05-17T17-32-27.543616", ".txt")[0])

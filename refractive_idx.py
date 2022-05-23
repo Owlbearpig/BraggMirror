@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from constants import *
 from functions import find_files, find_dp, extract_phase
 from p2p_image import DataPoint
+from numpy import exp
 
 if __name__ == '__main__':
     ref_points = [DataPoint(file) for file in find_files(data_dir, "Ref", ".txt")]
@@ -54,9 +55,10 @@ if __name__ == '__main__':
     plt.show()
 
     fc_sub = (n_sub + 1) ** 2 / (4 * n_sub)
-    alpha_sub = -0.5 * np.log(np.abs(T_sub[idx]) * fc_sub) / (d1 * 10**-1)
+    alpha_sub = -0.5 * np.log(np.abs(T_sub[idx]) * fc_sub) / (d1 * 10 ** -1)
+    # print(100*alpha_sub*c0/(4*np.pi*(fc_sub*10**12)))
     fc_sam = n_sam * (n_sub + 1) / ((n_sub + n_sam) * (n_sam + 1))
-    alpha_sam = -0.5 * np.log(np.abs(T_sam[idx]) * fc_sam) / (d2 * 10**-1)
+    alpha_sam = -0.5 * np.log(np.abs(T_sam[idx]) * fc_sam) / (d2 * 10 ** -1)
     plt.figure()
     plt.plot(f, alpha_sub, label=r"$\alpha_{sub}$")
     plt.plot(f, alpha_sam, label=r"$\alpha_{sam}$")
@@ -65,3 +67,12 @@ if __name__ == '__main__':
     plt.xlabel("frequency (THz)")
     plt.legend()
     plt.show()
+
+    alpha, n = 100 * alpha_sub[40], n_sub[40]
+
+    omega = 2 * pi * f[40] * 10 ** 12
+    d1 = d1 * mm2m
+
+    T_mod = exp(-alpha * d1 / 2) * exp(1j * (n - 1) * omega * d1 / c0) * (4 * n / (n + 1) ** 2)
+    print(np.abs(T_mod))
+    print(np.abs(T_sub[40]))
