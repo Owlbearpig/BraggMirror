@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
+from numpy import exp
 from constants import *
 from functions import find_files, find_dp, extract_phase
 from p2p_image import DataPoint
+
+
 
 if __name__ == '__main__':
     ref_points = [DataPoint(file) for file in find_files(data_dir, "Ref", ".txt")]
@@ -15,7 +18,7 @@ if __name__ == '__main__':
 
     ref_dp = ref_points[0]
     sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
-    sam_dp = find_dp(sam_points, x_pos=13.50, y_pos=15.00)
+    # sam_dp = find_dp(sam_points, x_pos=13.50, y_pos=15.00)
 
     # ref_dp.plot_td(label=f'ref_dp ({ref_dp.x_pos}, {ref_dp.y_pos})')
     # sub_dp.plot_td(label=f'sub_dp ({sub_dp.x_pos}, {sub_dp.y_pos})')
@@ -29,39 +32,27 @@ if __name__ == '__main__':
 
     f_ref, fft_ref = ref_dp.get_f(), ref_dp.get_Y()
     f_sub, fft_sub = sub_dp.get_f(), sub_dp.get_Y()
-    f_sam, fft_sam = sam_dp.get_f(), sam_dp.get_Y()
+    # f_sam, fft_sam = sam_dp.get_f(), sam_dp.get_Y()
 
     idx = (f_ref > 0.3) & (f_ref < 1.1)
 
     T_sub = fft_sub / fft_ref
-    T_sam = fft_sam / fft_sub
+
+
+
+    fp = 1 - exp(-alpha*d)*exp(1j*2*n.real*omega*d/c0)*(n-1)/(n+1)
+
+    denum =
 
     f = f_sub[idx]
 
-    phase_sub = extract_phase(f, T_sub[idx])
-    phase_sam = extract_phase(f, T_sam[idx])
 
-    n_sub = 1 + c0 * phase_sub / (2 * np.pi * f * d1 * 10 ** 9)
-    # n_sam = 1 + c0*phase_sam/(2*np.pi*f*d1*10**9) - d2/(d1*(n_sub-1))
-    n_sam = 1 + c0 * phase_sam / (2 * np.pi * f * d2 * 10 ** 9)
+def loss(n, params):
+    alpha = n
+    fp_denum = 1 - exp(-alpha*d)*exp(2*1j*n.real*omega*d/c0)*(n-1)/(n+1)
+    fp = 1 / fp_denum
+    T_mod = exp(-alpha*d/2)*exp(1j*n.real*omega*d/c0)*4*n/(n+1)**2
 
-    plt.figure()
-    plt.plot(f, n_sub, label="n sub")
-    plt.plot(f, n_sam, label="n sam")
-    plt.xlabel("frequency (THz)")
-    plt.ylabel("refractive index")
-    plt.legend()
-    plt.show()
+    return
 
-    fc_sub = (n_sub + 1) ** 2 / (4 * n_sub)
-    alpha_sub = -0.5 * np.log(np.abs(T_sub[idx]) * fc_sub) / (d1 * 10**-1)
-    fc_sam = n_sam * (n_sub + 1) / ((n_sub + n_sam) * (n_sam + 1))
-    alpha_sam = -0.5 * np.log(np.abs(T_sam[idx]) * fc_sam) / (d2 * 10**-1)
-    plt.figure()
-    plt.plot(f, alpha_sub, label=r"$\alpha_{sub}$")
-    plt.plot(f, alpha_sam, label=r"$\alpha_{sam}$")
-    # plt.ylim(2, 3)
-    plt.ylabel(r"absorption coefficient $\left(cm^{-1}\right)$")
-    plt.xlabel("frequency (THz)")
-    plt.legend()
-    plt.show()
+

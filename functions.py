@@ -10,6 +10,14 @@ def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
     return results
 
 
+def find_dp(datapoint_lst, x_pos, y_pos):
+    for sam_point in datapoint_lst:
+        if (abs(sam_point.x_pos - x_pos) < 0.25) and (abs(sam_point.y_pos - y_pos) < 0.25):
+            print(sam_point.file_path)
+
+            return sam_point
+
+
 def do_fft(t, y):
     n = len(y)
     dt = np.float(np.mean(np.diff(t)))
@@ -20,13 +28,22 @@ def do_fft(t, y):
     return f[idx_range], Y[idx_range]
 
 
-def find_dp(datapoint_lst, x_pos, y_pos):
-    for sam_point in datapoint_lst:
-        if (abs(sam_point.x_pos - x_pos) < 0.25) and (abs(sam_point.y_pos - y_pos) < 0.25):
-            print(sam_point.file_path)
+def extract_phase(f, T, plot=False):
+    phase = np.unwrap(np.angle(T))
+    phase = np.abs(phase)
 
-            return sam_point
+    p = np.polyfit(f, phase, 1)
+    phase -= p[1]
 
+    if plot:
+        plt.plot(f, phase, label='phase')
+        plt.plot(f, p[0] * f, label='lin. interpol')
+        plt.xlim((0, 1.1))
+        #plt.ylim((0, 18))
+        plt.legend()
+        #plt.show()
+
+    return phase
 
 if __name__ == '__main__':
     file = str(find_files(data_dir, "2022-05-17T17-32-27.543616", ".txt")[0])
