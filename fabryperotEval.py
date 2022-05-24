@@ -45,7 +45,7 @@ def optimize(loss, freqs, T_meas, *args):
     en_plot = False
 
     rez_nr, rez_ni = 300, 300
-    nr_arr, ni_arr = np.linspace(1.0, 3.0, rez_nr), np.linspace(0.01, 0.9, rez_ni)
+    nr_arr, ni_arr = np.linspace(1.0, 3.0, rez_nr), np.linspace(0.001, 0.9, rez_ni)
 
     nr_res, ni_res = np.zeros_like(freqs), np.zeros_like(freqs)
     for f_idx, f in enumerate(freqs):

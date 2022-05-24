@@ -23,6 +23,8 @@ if __name__ == '__main__':
 
     plt.imshow(img, origin='lower', extent=[x_min, x_max, y_min, y_max], aspect=1)
     #plt.imshow(img)
+    plt.title("Peak to peak")
     plt.xlabel("x (Owis) (mm)")
     plt.ylabel("y (TMCL) (mm)")
+    plt.savefig('sample_xy_map_p2p.pdf', format='pdf', dpi=1200)
     plt.show()
