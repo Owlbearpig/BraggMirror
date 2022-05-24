@@ -15,4 +15,15 @@ else:
     except FileNotFoundError:
         data_dir = Path(r"C:\Users\Laptop\Desktop\BraggMirror")
 
+
 mm2m = 10**-3
+THz = 10 ** 12
+
+d_sub = 0.711 * mm2m  # sub
+# d_sam = (1.207 - d_sub)*mm2m  # approximate sample thickness (measured), 0.5 fab dimension
+d_sam = 0.500 * mm2m
+
+
+
+# 2: sam 0.5 mm, 1: sub 0.711 mm, 3: sam+sub 1.207 mm (all in mm)
+

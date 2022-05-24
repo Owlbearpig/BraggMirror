@@ -2,69 +2,67 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
 from constants import *
-from functions import find_files, find_dp, extract_phase
-from p2p_image import DataPoint
+from functions import find_dp, extract_phase, average_dps, get_datapoints
 
 
-def loss(n, freq, T_sub):
-    d_sub = 0.711 * mm2m  # sub
-    # d_sam = (1.207 - d_sub)*mm2m  # approximate sample thickness (measured), 0.5 fab dimension
-    d_sam = 0.500 * mm2m
-
+def loss_sub(n, freq, T_meas, phase_meas):
     nr, ni = n.real, n.imag
+
     alpha, omega = 4 * pi * freq * ni / c0, 2 * pi * freq
 
-    fp = 1 / (1 - exp(-alpha * d_sub) * exp(1j * 2 * nr * omega * d_sub / c0) * (n - 1) / (n + 1))
+    fp = 1 / (1 - exp(-alpha * d_sub) * exp(1j * 2 * nr * omega * d_sub / c0) * (n - 1) ** 2 / (n + 1) ** 2)
 
     T_mod = fp * exp(-alpha * d_sub / 2) * exp(1j * n.real * omega * d_sub / c0) * 4 * n / (n + 1) ** 2
-    #print(T_mod.real, T_sub.real, T_mod.imag, T_sub.imag)
 
-    # return (T_mod.real - T_sub.real) ** 2
-    # return (T_mod.imag - T_sub.imag) ** 2
-    print(np.abs(T_sub), np.abs(T_mod))
-    return (T_mod.real - T_sub.real)**2 + (T_mod.imag - T_sub.imag) ** 2
+    phase_mod = (n.real - 1) * omega * d_sub / c0
+
+    return (np.abs(T_mod) - np.abs(T_meas)) ** 2 + (phase_meas - phase_mod) ** 2
 
 
-if __name__ == '__main__':
-    ref_points = [DataPoint(file) for file in find_files(data_dir, "Ref", ".txt")]
-    sub_points = [DataPoint(file) for file in find_files(data_dir, "Sub", ".txt")]
-    sam_points = [DataPoint(file) for file in find_files(data_dir, "Sam", ".txt")]
+def loss_sam(n, freq, T_meas, phase_meas, n_sub):
+    n1, n2 = n_sub, n
+    d1, d2 = d_sub, d_sam
 
-    # 1: sam 0.5 mm, 2: sub 0.711 mm, 3: sam+sub 1.207 mm (all in mm)
+    omega = 2 * pi * freq
 
-    ref_dp = ref_points[0]
-    sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
+    r10, r01, r12, r20 = (n1 - 1) / (n1 + 1), (1 - n1) / (1 + n1), (n1 - n2) / (n1 + n2), (n2 - 1) / (n2 + 1)
+    t12, t20, t10 = 2 * n1 / (n1 + n2), 2 * n2 / (n2 + 1), 2 * n1 / (n1 + 1)
 
-    f_ref, fft_ref = ref_dp.get_f(), ref_dp.get_Y()
-    f_sub, fft_sub = sub_dp.get_f(), sub_dp.get_Y()
-    # f_sam, fft_sam = sam_dp.get_f(), sam_dp.get_Y()
+    p1, p2, p3 = exp(1j * omega * n1 * d1 / c0), exp(1j * omega * n2 * d2 / c0), exp(1j * omega * d2 / c0)
 
-    idx = (f_ref > 0.3) & (f_ref < 1.1)
+    fp1, fp2, fp3 = 1 - r10 * r01 * p1 ** 2, 1 - r01 * r12 * p1 ** 2, 1 - r12 * r20 * p2 ** 2
 
-    T_sub = fft_sub / fft_ref
+    T_mod = fp1 * t12 * t20 * p2 / (t10 * p3 * fp2 * fp3)
 
-    #T_sub = T_sub / np.max(np.abs(T_sub))
+    phase_mod = (n.real - 1) * omega * d2 / c0
 
-    freqs, T_sub = f_sub[idx] * 10 ** 12, T_sub[idx]
-    # n0 = 2.6 + 1j * 0.015
-    rez_nr, rez_ni = 200, 200
-    nr_arr, ni_arr = np.linspace(2.6, 2.6, rez_nr), np.linspace(0.01, 0.1, rez_ni)
+    return (np.abs(T_mod) - np.abs(T_meas)) ** 2 + (phase_meas - phase_mod) ** 2
+
+
+def optimize(loss, freqs, T_meas, *args):
+    phase_meas = extract_phase(freqs, T_meas)
 
     en_plot = False
+
+    rez_nr, rez_ni = 300, 300
+    nr_arr, ni_arr = np.linspace(1.0, 3.0, rez_nr), np.linspace(0.01, 0.9, rez_ni)
+
     nr_res, ni_res = np.zeros_like(freqs), np.zeros_like(freqs)
     for f_idx, f in enumerate(freqs):
+        args_idx = [arg[f_idx] if len(arg) > 1 else arg for arg in args]
+
         grid_vals = np.zeros([rez_nr, rez_ni])
         for i in range(rez_nr):
             for j in range(rez_ni):
                 n = nr_arr[i] + 1j * ni_arr[j]
-                grid_vals[j, i] = loss(n, f, T_sub[f_idx])
+                grid_vals[j, i] = loss(n, freqs[f_idx], T_meas[f_idx], phase_meas[f_idx], *args_idx)
 
-        # grid_vals = np.log10(grid_vals)
+        grid_vals = np.log10(grid_vals)
 
         if en_plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.set_title('Residual sum plot')
+            ax.set_title(f'Residual sum plot freq: {round(f / THz, 3)} (THz)')
             fig.subplots_adjust(left=0.2)
 
             extent = [nr_arr[0], nr_arr[-1], ni_arr[0], ni_arr[-1]]
@@ -82,20 +80,51 @@ if __name__ == '__main__':
 
             plt.show()
 
-        losses = []
-        for ni in ni_arr:
-            losses.append(loss(2.6 + 1j*ni, f, T_sub[f_idx]))
-        plt.plot(ni_arr, losses)
-        plt.xlabel("ni arr")
-        plt.ylabel("losses")
-        plt.show()
-
         g_min_idx = np.argmin(grid_vals)
         min_x, min_y = np.unravel_index(g_min_idx, grid_vals.shape)
 
-        print(nr_arr[min_y], ni_arr[min_x], loss(nr_arr[min_y] + 1j * ni_arr[min_x], f, T_sub[f_idx]))
+        print(f"{np.round(f/THz, 3)} THz, n={nr_arr[min_y]} + {ni_arr[min_x]}j")
 
         nr_res[f_idx], ni_res[f_idx] = nr_arr[min_y], ni_arr[min_x]
 
-    plt.scatter(freqs, nr_res)
+    return nr_res + 1j * ni_res
+
+
+if __name__ == '__main__':
+    ref_points = get_datapoints("Ref")
+    sub_points = get_datapoints("Sub")
+    sam_points = get_datapoints("Sam")
+
+    ref_dp = ref_points[0]  # average_dps(ref_points[i])
+    sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
+    sam_dp = find_dp(sam_points, x_pos=13.50, y_pos=15.00)
+
+    f_ref, fft_ref = ref_dp.get_f(), ref_dp.get_Y()
+    f_sub, fft_sub = sub_dp.get_f(), sub_dp.get_Y()
+    f_sam, fft_sam = sam_dp.get_f(), sam_dp.get_Y()
+
+    T_sub = fft_sub / fft_ref
+    T_sam = fft_sam / fft_sub
+
+    idx = (f_ref > 0.3) & (f_ref < 1.1)
+    freqs, T_sub, T_sam = f_sub[idx] * THz, T_sub[idx], T_sam[idx]
+
+    try:
+        n_sub = np.load("n_sub.npy")
+    except FileNotFoundError:
+        n_sub = optimize(loss_sub, freqs, T_sub)
+        np.save("n_sub.npy", n_sub)
+
+    n_sam = optimize(loss_sam, freqs, T_sam, n_sub)
+
+    plt.plot(freqs, n_sub.real, label="n substrate")
+    plt.plot(freqs, n_sam.real, label="n sample")
+    plt.ylim((1, 3))
+    plt.legend()
+    plt.show()
+
+    plt.plot(freqs, 4 * pi * n_sub.imag * freqs / (100 * c0), label=r"$\alpha$ substrate")
+    plt.plot(freqs, 4 * pi * n_sam.imag * freqs / (100 * c0), label=r"$\alpha$ sample")
+    plt.ylabel("absorption coefficient $(cm^-1)$")
+    plt.legend()
     plt.show()

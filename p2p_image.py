@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
-
     ref_points = [DataPoint(file) for file in find_files(data_dir, "Ref", ".txt")]
     sub_points = [DataPoint(file) for file in find_files(data_dir, "Sub", ".txt")]
     sam_points = [DataPoint(file) for file in find_files(data_dir, "Sam", ".txt")]

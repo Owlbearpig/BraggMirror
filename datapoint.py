@@ -1,13 +1,22 @@
-from functions import do_fft
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import re
 
 
+def do_fft(t, y):
+    n = len(y)
+    dt = np.float(np.mean(np.diff(t)))
+    Y = np.fft.fft(y, n)
+    f = np.fft.fftfreq(len(t), dt)
+    idx_range = f > 0
+
+    return f[idx_range], Y[idx_range]
+
+
 class DataPoint:
 
-    def __init__(self, file_path):
+    def __init__(self, file_path=None, data=None):
         self.file_path = file_path
         self.time = None
         self.x_pos, self.y_pos = None, None
@@ -19,7 +28,14 @@ class DataPoint:
 
         self.set_metadata()
 
+        if data is not None:
+            self._data = data
+            self._format_data()
+
     def set_metadata(self):
+        if self.file_path is None:
+            return
+
         split_path = self.file_path.name.split("_")
         self.time = datetime.strptime(split_path[0], "%Y-%m-%dT%H-%M-%S.%f-")
         match_str = r"-?\d{1,3}.\d{1,3}"
@@ -27,8 +43,10 @@ class DataPoint:
         self.y_pos = float(re.match(match_str, split_path[-1]).group(0))
 
     def _format_data(self):
-        if self._data is None:
+        if self._data is None and self.file_path:
             self._data = np.loadtxt(self.file_path)
+        elif self._data is not None:
+            pass
         else:
             return
 

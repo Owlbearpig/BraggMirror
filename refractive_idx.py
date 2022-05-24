@@ -1,18 +1,15 @@
 import matplotlib.pyplot as plt
 from constants import *
-from functions import find_files, find_dp, extract_phase
-from p2p_image import DataPoint
+from functions import find_files, find_dp, extract_phase, get_datapoints
 from numpy import exp
 
 if __name__ == '__main__':
-    ref_points = [DataPoint(file) for file in find_files(data_dir, "Ref", ".txt")]
-    sub_points = [DataPoint(file) for file in find_files(data_dir, "Sub", ".txt")]
-    sam_points = [DataPoint(file) for file in find_files(data_dir, "Sam", ".txt")]
+    d1 = d_sub
+    d2 = d_sam
 
-    # 1: sam 0.5 mm, 2: sub 0.711 mm, 3: sam+sub 1.207 mm (all in mm)
-    d1 = 0.711  # sub
-    d2 = 1.207 - d1  # approximate sample thickness (measured), 0.5 fab dimension
-    d2 = 0.500
+    ref_points = get_datapoints("Ref")
+    sub_points = get_datapoints("Sub")
+    sam_points = get_datapoints("Sam")
 
     ref_dp = ref_points[0]
     sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
@@ -42,9 +39,9 @@ if __name__ == '__main__':
     phase_sub = extract_phase(f, T_sub[idx])
     phase_sam = extract_phase(f, T_sam[idx])
 
-    n_sub = 1 + c0 * phase_sub / (2 * np.pi * f * d1 * 10 ** 9)
+    n_sub = 1 + c0 * phase_sub / (2 * np.pi * f * THz * d1)
     # n_sam = 1 + c0*phase_sam/(2*np.pi*f*d1*10**9) - d2/(d1*(n_sub-1))
-    n_sam = 1 + c0 * phase_sam / (2 * np.pi * f * d2 * 10 ** 9)
+    n_sam = 1 + c0 * phase_sam / (2 * np.pi * f * THz * d2)
 
     plt.figure()
     plt.plot(f, n_sub, label="n sub")
@@ -55,24 +52,25 @@ if __name__ == '__main__':
     plt.show()
 
     fc_sub = (n_sub + 1) ** 2 / (4 * n_sub)
-    alpha_sub = -0.5 * np.log(np.abs(T_sub[idx]) * fc_sub) / (d1 * 10 ** -1)
+    alpha_sub = -2 * np.log(np.abs(T_sub[idx]) * fc_sub) / d1
     # print(100*alpha_sub*c0/(4*np.pi*(fc_sub*10**12)))
-    fc_sam = n_sam * (n_sub + 1) / ((n_sub + n_sam) * (n_sam + 1))
-    alpha_sam = -0.5 * np.log(np.abs(T_sam[idx]) * fc_sam) / (d2 * 10 ** -1)
+    fc_sam = (n_sam + n_sub) * (n_sam + 1) / (2 * n_sam * (n_sub + 1))
+
+    alpha_sam = -2 * np.log(np.abs(T_sam[idx]) * fc_sam) / d2
     plt.figure()
-    plt.plot(f, alpha_sub, label=r"$\alpha_{sub}$")
-    plt.plot(f, alpha_sam, label=r"$\alpha_{sam}$")
+    plt.plot(f, alpha_sub / 100, label=r"$\alpha_{sub}$")
+    plt.plot(f, alpha_sam / 100, label=r"$\alpha_{sam}$")
     # plt.ylim(2, 3)
     plt.ylabel(r"absorption coefficient $\left(cm^{-1}\right)$")
     plt.xlabel("frequency (THz)")
     plt.legend()
     plt.show()
 
-    alpha, n = 100 * alpha_sub[40], n_sub[40]
-
-    omega = 2 * pi * f[40] * 10 ** 12
-    d1 = d1 * mm2m
-
-    T_mod = exp(-alpha * d1 / 2) * exp(1j * (n - 1) * omega * d1 / c0) * (4 * n / (n + 1) ** 2)
-    print(np.abs(T_mod))
-    print(np.abs(T_sub[40]))
+    k_sam = c0*alpha_sam / (4*pi*f*THz)
+    print(k_sam)
+    """
+    plt.plot(f, phase_sub, label="phase sub")
+    plt.plot(f, extract_phase(f, T_mod), label="phase model")
+    plt.legend()
+    plt.show()
+    """

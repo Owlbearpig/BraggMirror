@@ -1,7 +1,11 @@
 import matplotlib.pyplot as plt
-
+import numpy as np
+from datapoint import DataPoint
 from constants import *
 
+
+def get_datapoints(search_str=""):
+    return [DataPoint(file) for file in find_files(data_dir, search_str, ".txt")]
 
 def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
     results = [Path(os.path.join(root, name))
@@ -16,16 +20,6 @@ def find_dp(datapoint_lst, x_pos, y_pos):
             print(sam_point.file_path)
 
             return sam_point
-
-
-def do_fft(t, y):
-    n = len(y)
-    dt = np.float(np.mean(np.diff(t)))
-    Y = np.fft.fft(y, n)
-    f = np.fft.fftfreq(len(t), dt)
-    idx_range = f > 0
-
-    return f[idx_range], Y[idx_range]
 
 
 def extract_phase(f, T, plot=False):
@@ -46,7 +40,21 @@ def extract_phase(f, T, plot=False):
     return phase
 
 
+def average_dps(dp_lst):
+    y_avg = np.zeros_like(dp_lst[0].get_y())
+    for dp in dp_lst:
+        y_avg += dp.get_y()
+
+    avg_data = []
+    for ty_tuple in zip(dp_lst[0].get_t(), y_avg/len(dp_lst)):
+        avg_data.append(ty_tuple)
+
+    return DataPoint(data=np.array(avg_data))
+
+
 if __name__ == '__main__':
+    from datapoint import do_fft
+
     file = str(find_files(data_dir, "2022-05-17T17-32-27.543616", ".txt")[0])
     data = np.loadtxt(file)
     t, y = data[:, 0], data[:, 1]
