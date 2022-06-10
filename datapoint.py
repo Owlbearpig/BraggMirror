@@ -37,11 +37,12 @@ class DataPoint:
         if self.file_path is None:
             return
 
-        match = re.match(DataPoint.reg_str, self.file_path.name)
-        print(match.groups())
+        matches = [match.group() for match in re.finditer(DataPoint.reg_str, self.file_path.name)]
+        print(matches)
 
         split_path = self.file_path.name.split("_")
-        self.time = datetime.strptime(split_path[0], "%Y-%m-%dT%H-%M-%S.%f-")
+        self.time = datetime.strptime(matches[0], "%Y-%m-%dT%H-%M-%S.%f")
+
         match_str = r"-?\d{1,3}.\d{1,3}"
 
         self.x_pos = float(re.match(match_str, split_path[-2]).group(0))
