@@ -4,8 +4,9 @@ from datapoint import DataPoint
 from constants import *
 
 
-def get_datapoints(search_str=""):
-    return [DataPoint(file) for file in find_files(data_dir, search_str, ".txt")]
+def get_datapoints(search_str="", dir_=top_dir, dp_class=DataPoint):
+    return [dp_class(file_path) for file_path in find_files(dir_, search_str, ".txt")]
+
 
 def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
     results = [Path(os.path.join(root, name))
@@ -46,7 +47,7 @@ def average_dps(dp_lst):
         y_avg += dp.get_y()
 
     avg_data = []
-    for ty_tuple in zip(dp_lst[0].get_t(), y_avg/len(dp_lst)):
+    for ty_tuple in zip(dp_lst[0].get_t(), y_avg / len(dp_lst)):
         avg_data.append(ty_tuple)
 
     return DataPoint(data=np.array(avg_data))
@@ -55,6 +56,7 @@ def average_dps(dp_lst):
 if __name__ == '__main__':
     from datapoint import do_fft
 
+    data_dir = top_dir / "3x3mmRefSquare_Lab2"
     file = str(find_files(data_dir, "2022-05-17T17-32-27.543616", ".txt")[0])
     data = np.loadtxt(file)
     t, y = data[:, 0], data[:, 1]

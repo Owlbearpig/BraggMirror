@@ -97,6 +97,8 @@ if __name__ == '__main__':
 
     ref_dp = ref_points[0]  # average_dps(ref_points[i])
     sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
+    # ref_dp = find_dp(ref_points, x_pos=-10.00, y_pos=15.00)
+    # sub_dp = find_dp(sam_points, x_pos=10.50, y_pos=15.00)
     sam_dp = find_dp(sam_points, x_pos=13.50, y_pos=15.00)
 
     f_ref, fft_ref = ref_dp.get_f(), ref_dp.get_Y()

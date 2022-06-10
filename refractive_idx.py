@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 from constants import *
-from functions import find_files, find_dp, extract_phase, get_datapoints
-from numpy import exp
+from functions import find_dp, extract_phase, get_datapoints
 from scipy.optimize import curve_fit
 
 
@@ -9,9 +8,11 @@ if __name__ == '__main__':
     d1 = d_sub
     d2 = d_sam
 
-    ref_points = get_datapoints("Ref")
-    sub_points = get_datapoints("Sub")
-    sam_points = get_datapoints("Sam")
+    data_dir = top_dir / "3x3mmRefSquare_Lab2"
+
+    ref_points = get_datapoints("Ref", dir_=data_dir)
+    sub_points = get_datapoints("Sub", dir_=data_dir)
+    sam_points = get_datapoints("Sam", dir_=data_dir)
 
     ref_dp = ref_points[0]
     sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)

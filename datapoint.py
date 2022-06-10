@@ -15,6 +15,7 @@ def do_fft(t, y):
 
 
 class DataPoint:
+    reg_str = None
 
     def __init__(self, file_path=None, data=None):
         self.file_path = file_path
@@ -36,9 +37,13 @@ class DataPoint:
         if self.file_path is None:
             return
 
+        match = re.match(DataPoint.reg_str, self.file_path.name)
+        print(match.groups())
+
         split_path = self.file_path.name.split("_")
         self.time = datetime.strptime(split_path[0], "%Y-%m-%dT%H-%M-%S.%f-")
         match_str = r"-?\d{1,3}.\d{1,3}"
+
         self.x_pos = float(re.match(match_str, split_path[-2]).group(0))
         self.y_pos = float(re.match(match_str, split_path[-1]).group(0))
 

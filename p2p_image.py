@@ -1,11 +1,13 @@
-from constants import data_dir
 from functions import find_files
+from constants import top_dir
 from datapoint import DataPoint
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
+    data_dir = top_dir / "3x3mmRefSquare_Lab2"
+
     ref_points = [DataPoint(file) for file in find_files(data_dir, "Ref", ".txt")]
     sub_points = [DataPoint(file) for file in find_files(data_dir, "Sub", ".txt")]
     sam_points = [DataPoint(file) for file in find_files(data_dir, "Sam", ".txt")]
