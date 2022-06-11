@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from constants import *
+from datapoint import DataPoint
 from functions import find_dp, extract_phase, get_datapoints
 from scipy.optimize import curve_fit
 
@@ -10,9 +11,14 @@ if __name__ == '__main__':
 
     data_dir = top_dir / "3x3mmRefSquare_Lab2"
 
-    ref_points = get_datapoints("Ref", dir_=data_dir)
-    sub_points = get_datapoints("Sub", dir_=data_dir)
-    sam_points = get_datapoints("Sam", dir_=data_dir)
+    settings = {"regex": r"(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{6})|([0-9]*[.]?[0-9]+) ",
+                "enable_preprocessing": True}
+
+    DataPoint.settings = settings
+
+    ref_points = get_datapoints("Ref", dir_=data_dir, dp_class=DataPoint)
+    sub_points = get_datapoints("Sub", dir_=data_dir, dp_class=DataPoint)
+    sam_points = get_datapoints("Sam", dir_=data_dir, dp_class=DataPoint)
 
     ref_dp = ref_points[0]
     sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
@@ -33,6 +39,10 @@ if __name__ == '__main__':
     f_sam, fft_sam = sam_dp.get_f(), sam_dp.get_Y()
 
     idx = (f_ref > 0.3) & (f_ref < 1.1)
+    plt.plot(f_ref[idx], np.unwrap(np.angle(fft_ref[idx])))
+    plt.plot(f_ref[idx], np.unwrap(np.angle(fft_sam[idx])))
+    plt.plot(f_ref[idx], np.unwrap(np.angle(fft_ref[idx]))-np.unwrap(np.angle(fft_sam[idx])))
+    plt.show()
 
     T_sub = fft_sub / fft_ref
     T_sam = fft_sam / fft_sub
@@ -72,7 +82,7 @@ if __name__ == '__main__':
     ax2.set_xlabel(r"Wavelength $(\mu m)$")
 
     plt.title("Refractive index")
-    plt.savefig('refr_index.pdf', format='pdf', dpi=1200, bbox_inches="tight")
+    #plt.savefig('refr_index.pdf', format='pdf', dpi=1200, bbox_inches="tight")
     plt.show()
 
     def func(x, a, b, c):
@@ -87,12 +97,12 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax2 = ax1.twiny()
-
+    """
     popt, _ = curve_fit(func, f, alpha_sub / 100)
     sub_label = r'$\alpha_{sub}$ fit: a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt)
     ax1.plot(f, func(f, *popt), 'r-', label=sub_label)
     ax1.plot(f, alpha_sub / 100, label=r"$\alpha_{sub}$ measured")
-
+    """
     popt, _ = curve_fit(func, f[8:], alpha_sam[8:] / 100)
     sam_label = r'$\alpha_{polymer}$ fit: a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt)
     ax1.plot(f, func(f, *popt), 'r-', label=sam_label, color="black")
@@ -112,8 +122,8 @@ if __name__ == '__main__':
     ax2.set_xticklabels(tick_function(ax2Ticks))
     ax2.set_xlabel(r"Wavelength $(\mu m)$")
 
-    plt.title(r"$\alpha$ substrate and sample. Fits: $a\nu^2+b\nu+c$")
-    plt.savefig('abs_coeff_sample_only.pdf', format='pdf', dpi=1200, bbox_inches="tight")
+    plt.title(r"$\alpha$ polymer only. Fits: $a\nu^2+b\nu+c$")
+    #plt.savefig('abs_coeff_sample_only.pdf', format='pdf', dpi=1200, bbox_inches="tight")
 
     plt.show()
 

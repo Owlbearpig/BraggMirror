@@ -2,6 +2,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import re
+from THz.preprocessing import butter_highpass_filter
 
 
 def do_fft(t, y):
@@ -15,16 +16,17 @@ def do_fft(t, y):
 
 
 class DataPoint:
-    reg_str = None
+    settings = {"regex": r"(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{6})-([^-]*)-|([0-9]*[.]?[0-9]+)",
+                "enable_preprocessing": True}
 
     def __init__(self, file_path=None, data=None):
         self.file_path = file_path
         self.time = None
-        self.x_pos, self.y_pos = None, None
+        self.x_pos, self.y_pos, self.z_pos = None, None, None
 
         self._t, self._y = None, None
         self._f, self._Y = None, None
-        self._val_td, self._val_fd = None, None
+        self._val_td, self._val_fd, self._tof = None, None, None
         self._data = None
 
         self.set_metadata()
@@ -37,35 +39,49 @@ class DataPoint:
         if self.file_path is None:
             return
 
-        matches = [match.group() for match in re.finditer(DataPoint.reg_str, self.file_path.name)]
-        print(matches)
-
-        split_path = self.file_path.name.split("_")
+        matches = [match.group() for match in re.finditer(DataPoint.settings['regex'], self.file_path.name)]
         self.time = datetime.strptime(matches[0], "%Y-%m-%dT%H-%M-%S.%f")
 
-        match_str = r"-?\d{1,3}.\d{1,3}"
+        if self.file_path.name.split("-")[-1][0:3] == "avg":
+            self.x_pos, self.y_pos, self.z_pos = eval(matches[2])
+        else:
+            self.x_pos, self.y_pos = float(matches[-2]), float(matches[-1])
 
-        self.x_pos = float(re.match(match_str, split_path[-2]).group(0))
-        self.y_pos = float(re.match(match_str, split_path[-1]).group(0))
+    def _preprocess(self, data):
+        t, y = data[:, 0], data[:, 1]
+        y = y - np.mean(y[0:25])
+        fs = 1 / np.float(np.mean(np.diff(t)))
+        nyq = 0.5 * fs
+        low = 0.5 / nyq
+
+        y = butter_highpass_filter(y, low, fs, order=5, plot=False)
+
+        data[:, 0], data[:, 1] = t, y
+
+        return data
 
     def _format_data(self):
-        if self._data is None and self.file_path:
+        if (self._data is None) and self.file_path:
             self._data = np.loadtxt(self.file_path)
+            if DataPoint.settings['enable_preprocessing']:
+                self._data = self._preprocess(self._data)
         elif self._data is not None:
             pass
         else:
             return
 
-        t, y = self._data[:, 0], self._data[:, 1]
-        self._t, self._y = t, y - np.mean(y)
-        self._val_td = np.max(np.abs(self._y))
+        self._t, self._y = self._data[:, 0], self._data[:, 1]
+        self._val_td = np.abs(np.max(self._y)) + np.abs(np.min(self._y))
+        self._tof = self._t[np.argmax(np.abs(self._y))]
 
         self._f, self._Y = do_fft(self._t, self._y)
-        f_min, f_max = np.argmin(np.abs(self._f - 0.9)), np.argmin(np.abs(self._f - 1.2))
+        f_min, f_max = np.argmin(np.abs(self._f - 0.570)), np.argmin(np.abs(self._f - 0.620))
         self._val_fd = np.sum(np.abs(self._Y[f_min:f_max]))
 
     def plot_td(self, **kwargs):
         self._format_data()
+        kwargs["label"] = self.file_path.stem
+
         plt.plot(self._t, self._y, **kwargs)
         plt.xlabel("time (ps)")
         plt.ylabel("amplitude (arb. u.)")
@@ -73,10 +89,11 @@ class DataPoint:
     def plot_fft(self, **kwargs):
         self._format_data()
 
-        idx = (self._f > 0.3) & (self._f < 1.0)
-
+        idx = (self._f > 0.1) & (self._f < 1.1)
+        kwargs["label"] = self.file_path.stem
         plt.plot(self._f[idx], np.log10(np.abs(self._Y))[idx], **kwargs)
-        plt.title(self.file_path.stem)
+        plt.xlabel("frequency (THz)")
+        plt.ylabel("amplitude (arb. u.)")
 
     def get_t(self):
         if self._t is not None:
@@ -119,3 +136,15 @@ class DataPoint:
         else:
             self._format_data()
             return self._val_fd
+
+    def get_tof(self):
+        if self._tof is not None:
+            return self._tof
+        else:
+            self._format_data()
+            return self._tof
+
+    def subtract_background(self, background_dp):
+        self._format_data()
+        self._data[:, 1] -= background_dp.get_y()
+        self._format_data()

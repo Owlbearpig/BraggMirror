@@ -125,7 +125,7 @@ if __name__ == '__main__':
     plt.legend()
     plt.show()
 
-    plt.plot(freqs, 4 * pi * n_sub.imag * freqs / (100 * c0), label=r"$\alpha$ substrate")
+    #plt.plot(freqs, 4 * pi * n_sub.imag * freqs / (100 * c0), label=r"$\alpha$ substrate")
     plt.plot(freqs, 4 * pi * n_sam.imag * freqs / (100 * c0), label=r"$\alpha$ sample")
     plt.ylabel("absorption coefficient $(cm^-1)$")
     plt.legend()

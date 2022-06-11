@@ -16,11 +16,22 @@ def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
 
 
 def find_dp(datapoint_lst, x_pos, y_pos):
-    for sam_point in datapoint_lst:
-        if (abs(sam_point.x_pos - x_pos) < 0.25) and (abs(sam_point.y_pos - y_pos) < 0.25):
-            print(sam_point.file_path)
+    for dp in datapoint_lst:
+        if (abs(dp.x_pos - x_pos) < 0.25) and (abs(dp.y_pos - y_pos) < 0.25):
+            print(dp.file_path)
 
-            return sam_point
+            return dp
+
+
+def find_and_plot_dp(datapoint_lst, coords, td=True):
+    for x, y in coords:
+        dp = find_dp(datapoint_lst, x, y)
+        if td:
+            dp.plot_td()
+        else:
+            dp.plot_fft()
+    plt.legend()
+    plt.show()
 
 
 def extract_phase(f, T, plot=False):
