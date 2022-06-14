@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
 from constants import *
-from functions import find_dp, extract_phase, average_dps, get_datapoints
+from functions import find_dp, extract_phase, average_dp, get_datapoints
 
 
 def loss_sub(n, freq, T_meas, phase_meas):

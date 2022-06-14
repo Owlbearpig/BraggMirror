@@ -15,17 +15,28 @@ def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
     return results
 
 
-def find_dp(datapoint_lst, x_pos, y_pos):
-    for dp in datapoint_lst:
-        if (abs(dp.x_pos - x_pos) < 0.25) and (abs(dp.y_pos - y_pos) < 0.25):
-            print(dp.file_path)
+def find_dp(datapoint_lst, coord_list):
+    matches = []
+    for coords in coord_list:
+        best_match, smallest_diff = None, np.inf
+        for dp in datapoint_lst:
+            x_pos, y_pos = coords
+            diff = abs(dp.x_pos - x_pos)+abs(dp.y_pos - y_pos)
+            if diff < smallest_diff:
+                best_match, smallest_diff = dp, diff
 
-            return dp
+        print(best_match.file_path)
+        matches.append(best_match)
+
+    if len(coord_list) == 1:
+        return matches[0]
+    else:
+        return list(set(matches))
 
 
 def find_and_plot_dp(datapoint_lst, coords, td=True):
-    for x, y in coords:
-        dp = find_dp(datapoint_lst, x, y)
+    found_dps = find_dp(datapoint_lst, coords)
+    for dp in found_dps:
         if td:
             dp.plot_td()
         else:
@@ -52,7 +63,18 @@ def extract_phase(f, T, plot=False):
     return phase
 
 
-def average_dps(dp_lst):
+def point_grid(square, rez=0.25):
+    x_range = np.arange(square[1][0], square[1][1]+rez, rez)
+    y_range = np.arange(square[0][0], square[0][1]+rez, rez)
+
+    points = []
+    for x in x_range:
+        for y in y_range:
+            points.append((x, y))
+    return points
+
+
+def average_dp(dp_lst):
     y_avg = np.zeros_like(dp_lst[0].get_y())
     for dp in dp_lst:
         y_avg += dp.get_y()
@@ -66,6 +88,9 @@ def average_dps(dp_lst):
 
 if __name__ == '__main__':
     from datapoint import do_fft
+
+    square = [[7, 10], [4, 6]]
+    print(point_grid(square))
 
     data_dir = top_dir / "3x3mmRefSquare_Lab2"
     file = str(find_files(data_dir, "2022-05-17T17-32-27.543616", ".txt")[0])

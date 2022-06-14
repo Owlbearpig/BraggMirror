@@ -2,6 +2,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import re
+from pathlib import Path
 from THz.preprocessing import butter_highpass_filter
 
 
@@ -17,9 +18,10 @@ def do_fft(t, y):
 
 class DataPoint:
     settings = {"regex": r"(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{6})-([^-]*)-|([0-9]*[.]?[0-9]+)",
-                "enable_preprocessing": True}
+                "enable_preprocessing": False}
 
     def __init__(self, file_path=None, data=None):
+        self.label = None
         self.file_path = file_path
         self.time = None
         self.x_pos, self.y_pos, self.z_pos = None, None, None
@@ -35,10 +37,18 @@ class DataPoint:
             self._data = data
             self._format_data()
 
+    def __eq__(self, other):
+        return self.file_path == other.file_path
+
+    def __hash__(self):
+        return hash(('file_path', self.file_path))
+
     def set_metadata(self):
         if self.file_path is None:
+            self.label = "avg. point"
             return
-
+        self.label = self.file_path.stem
+        
         matches = [match.group() for match in re.finditer(DataPoint.settings['regex'], self.file_path.name)]
         self.time = datetime.strptime(matches[0], "%Y-%m-%dT%H-%M-%S.%f")
 
@@ -46,7 +56,8 @@ class DataPoint:
             self.x_pos, self.y_pos, self.z_pos = eval(matches[2])
         else:
             self.x_pos, self.y_pos = float(matches[-2]), float(matches[-1])
-
+        
+        
     def _preprocess(self, data):
         t, y = data[:, 0], data[:, 1]
         y = y - np.mean(y[0:25])
@@ -71,11 +82,11 @@ class DataPoint:
             return
 
         self._t, self._y = self._data[:, 0], self._data[:, 1]
-        self._val_td = np.abs(np.max(self._y)) + np.abs(np.min(self._y))
+        self._val_td = np.max(np.abs(self._y))
         self._tof = self._t[np.argmax(np.abs(self._y))]
 
         self._f, self._Y = do_fft(self._t, self._y)
-        f_min, f_max = np.argmin(np.abs(self._f - 0.570)), np.argmin(np.abs(self._f - 0.620))
+        f_min, f_max = np.argmin(np.abs(self._f - 0.545)), np.argmin(np.abs(self._f - 0.660))
         self._val_fd = np.sum(np.abs(self._Y[f_min:f_max]))
 
     def plot_td(self, **kwargs):
@@ -89,11 +100,11 @@ class DataPoint:
     def plot_fft(self, **kwargs):
         self._format_data()
 
-        idx = (self._f > 0.1) & (self._f < 1.1)
-        kwargs["label"] = self.file_path.stem
-        plt.plot(self._f[idx], np.log10(np.abs(self._Y))[idx], **kwargs)
+        idx = (self._f > 0.1) & (self._f < 3.1)
+        kwargs["label"] = self.label
+        plt.plot(self._f[idx], 20*np.log10(np.abs(self._Y))[idx], **kwargs)
         plt.xlabel("frequency (THz)")
-        plt.ylabel("amplitude (arb. u.)")
+        plt.ylabel("amplitude (dB)")
 
     def get_t(self):
         if self._t is not None:
