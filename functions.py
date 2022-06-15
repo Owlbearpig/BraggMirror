@@ -16,6 +16,7 @@ def find_files(top_dir=ROOT_DIR, search_str='', file_extension=''):
 
 
 def find_dp(datapoint_lst, coord_list):
+    testing = False
     matches = []
     for coords in coord_list:
         best_match, smallest_diff = None, np.inf
@@ -25,7 +26,8 @@ def find_dp(datapoint_lst, coord_list):
             if diff < smallest_diff:
                 best_match, smallest_diff = dp, diff
 
-        print(best_match.file_path)
+        if testing:
+            print(best_match.file_path)
         matches.append(best_match)
 
     if len(coord_list) == 1:
@@ -34,14 +36,46 @@ def find_dp(datapoint_lst, coord_list):
         return list(set(matches))
 
 
-def find_and_plot_dp(datapoint_lst, coords, td=True):
+def find_and_plot_dp(datapoint_lst, coords, td=True, **kwargs):
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+
     found_dps = find_dp(datapoint_lst, coords)
     for dp in found_dps:
         if td:
-            dp.plot_td()
+            dp.plot_td(**kwargs)
         else:
-            dp.plot_fft()
-    plt.legend()
+            dp.plot_fft(ax1, **kwargs)
+
+    ax1.legend()
+
+    ax1Ticks = ax1.get_xticks()
+    ax2Ticks = ax1Ticks
+
+    def tick_function(X):
+        V = 10**6 * c0 / (X * THz)
+        return [f"{np.round(z, 1)}" for z in V]
+
+    ax2 = ax1.twiny()
+    ax2.set_xticks(ax2Ticks)
+    ax2.set_xbound(ax1.get_xbound())
+    ax2.set_xticklabels(tick_function(ax2Ticks))
+    ax2.set_xlabel(r"Wavelength $(\mu m)$")
+
+    plt.title(f"FFT of {len(found_dps)} selected points")
+    figure = plt.gcf()
+    figure.set_size_inches(16, 9)
+    f_min, f_max = kwargs["freq_range"]
+    if kwargs["intensity_plot"]:
+        plot_type = "Intensity"
+    else:
+        plot_type = "log"
+
+    plt.savefig(f"FFT_{plot_type}_{len(found_dps)}_points_({round(f_min, 3)}-{round(f_max, 3)})_THz.pdf",
+                format="pdf", dpi=1200)
+
+    manager = plt.get_current_fig_manager()
+    manager.resize(*manager.window.maxsize())
     plt.show()
 
 

@@ -23,7 +23,8 @@ d_sub = 0.711 * mm2m  # sub
 d_sam = 0.500 * mm2m
 
 settings_bg = {"regex": r"(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{6})|(?<=\[)(.+?)(?=\])",
-               "enable_preprocessing": 1}
+               "enable_preprocessing": 1,
+               }
 
 settings_refsq = {"regex": r"(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{6})|([0-9]*[.]?[0-9]+) ",
                   "enable_preprocessing": 1}

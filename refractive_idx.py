@@ -21,8 +21,8 @@ if __name__ == '__main__':
     sam_points = get_datapoints("Sam", dir_=data_dir, dp_class=DataPoint)
 
     ref_dp = ref_points[0]
-    sub_dp = find_dp(sam_points, x_pos=11.00, y_pos=19.00)
-    sam_dp = find_dp(sam_points, x_pos=13.50, y_pos=15.00)
+    sub_dp = find_dp(sam_points, [(11.00, 19.00)])
+    sam_dp = find_dp(sam_points, [(13.50, 15.00)])
 
     # ref_dp.plot_td(label=f'ref_dp ({ref_dp.x_pos}, {ref_dp.y_pos})')
     # sub_dp.plot_td(label=f'sub_dp ({sub_dp.x_pos}, {sub_dp.y_pos})')

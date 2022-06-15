@@ -5,7 +5,13 @@ import re
 from pathlib import Path
 from THz.preprocessing import butter_highpass_filter
 
+plt.rcParams.update({"font.size": 16,
+                     "axes.grid": True})
 
+"""
+
+
+"""
 def do_fft(t, y):
     n = len(y)
     dt = np.float(np.mean(np.diff(t)))
@@ -18,7 +24,8 @@ def do_fft(t, y):
 
 class DataPoint:
     settings = {"regex": r"(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{6})-([^-]*)-|([0-9]*[.]?[0-9]+)",
-                "enable_preprocessing": False}
+                "enable_preprocessing": False,
+                "fft_sum_range": (0.545, 0.660)}
 
     def __init__(self, file_path=None, data=None):
         self.label = None
@@ -47,7 +54,6 @@ class DataPoint:
         if self.file_path is None:
             self.label = "avg. point"
             return
-        self.label = self.file_path.stem
         
         matches = [match.group() for match in re.finditer(DataPoint.settings['regex'], self.file_path.name)]
         self.time = datetime.strptime(matches[0], "%Y-%m-%dT%H-%M-%S.%f")
@@ -56,7 +62,8 @@ class DataPoint:
             self.x_pos, self.y_pos, self.z_pos = eval(matches[2])
         else:
             self.x_pos, self.y_pos = float(matches[-2]), float(matches[-1])
-        
+
+        self.label = f"x={self.x_pos} mm, y={self.y_pos} mm"  # self.file_path.stem
         
     def _preprocess(self, data):
         t, y = data[:, 0], data[:, 1]
@@ -86,7 +93,9 @@ class DataPoint:
         self._tof = self._t[np.argmax(np.abs(self._y))]
 
         self._f, self._Y = do_fft(self._t, self._y)
-        f_min, f_max = np.argmin(np.abs(self._f - 0.545)), np.argmin(np.abs(self._f - 0.660))
+
+        f_min, f_max = DataPoint.settings["fft_sum_range"][0], DataPoint.settings["fft_sum_range"][1]
+        f_min, f_max = np.argmin(np.abs(self._f - f_min)),  np.argmin(np.abs(self._f - f_max))
         self._val_fd = np.sum(np.abs(self._Y[f_min:f_max]))
 
     def plot_td(self, **kwargs):
@@ -94,17 +103,42 @@ class DataPoint:
         kwargs["label"] = self.file_path.stem
 
         plt.plot(self._t, self._y, **kwargs)
-        plt.xlabel("time (ps)")
-        plt.ylabel("amplitude (arb. u.)")
+        plt.xlabel("Time (ps)")
+        plt.ylabel("Amplitude (arb. u.)")
 
-    def plot_fft(self, **kwargs):
+    def plot_fft(self, ax=None, **kwargs):
         self._format_data()
+        f_min, f_max = kwargs["freq_range"][0] * 0.95, kwargs["freq_range"][1] * 1.05
+        idx = (self._f > f_min) & (self._f < f_max)
+        ax.set_xlim((f_min, f_max))
 
-        idx = (self._f > 0.1) & (self._f < 3.1)
-        kwargs["label"] = self.label
-        plt.plot(self._f[idx], 20*np.log10(np.abs(self._Y))[idx], **kwargs)
-        plt.xlabel("frequency (THz)")
-        plt.ylabel("amplitude (dB)")
+        if kwargs["intensity_plot"]:
+            y_label = "Intensity $[|FFT|^2]$ (Arb. u.)"
+            Y_db = np.abs(self._Y)**2
+            met_t, bragg_t = 90, 10
+        else:
+            y_label = r"Amplitude $[20*log_{10}\left(|FFT|\right)]$ (dB)"
+            Y_db = 20 * np.log10(np.abs(self._Y))
+            met_t, bragg_t = 20, 10
+
+        test_val = Y_db[np.argmin(np.abs(self._f - 0.6))]
+
+        if test_val > met_t:
+            point_type = "Metal reference"
+        elif (test_val > bragg_t) and (test_val < met_t):
+            point_type = "BraggMirror"
+        else:
+            point_type = "Background"
+
+        label = self.label + f" ({point_type})"
+        if ax is not None:
+            ax.plot(self._f[idx], Y_db[idx], label=label)
+            ax.set_xlabel("Frequency (THz)")
+            ax.set_ylabel(y_label)
+        else:
+            plt.plot(self._f[idx], Y_db[idx], label=label)
+
+        plt.xlabel("Frequency (THz)")
 
     def get_t(self):
         if self._t is not None:
